@@ -183,6 +183,11 @@
       </div>
 
       <div>
+        <p class="sec-title">רמת קושי</p>
+        <div class="chips" id="diffs"></div>
+      </div>
+
+      <div>
         <p class="sec-title">נושאים</p>
         <div class="topics" id="topics"></div>
       </div>
@@ -212,7 +217,10 @@
           <div class="prog-row"><span id="progLabel">שאלה</span><b id="progNum">1/20</b></div>
           <div class="bar"><i id="progBar"></i></div>
         </div>
-        <button class="link" id="quitBtn" type="button">סיום</button>
+        <div class="hlinks">
+          <button class="link" id="homeBtn" type="button">→ דף ראשי</button>
+          <button class="link" id="quitBtn" type="button">סיום וסיכום</button>
+        </div>
       </div>
       <div class="meta" id="qmeta"></div>
       <p class="qtext" id="qtext"></p>
@@ -241,6 +249,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 let Q = [], byTopic = {}, topicCat = {};
 let mode = "practice";
 let catsOn = new Set(CAT_ORDER), topicsOn = new Set();
+const DIFF_ORDER = ["easy","medium","hard"];
+let diffOn = new Set(DIFF_ORDER);
 let run = null; // {items:[q], answers:[idx|null], i, mode, revealed:Set}
 
 // ---- history (per-viewer, best effort) ----
@@ -268,6 +278,7 @@ function renderSetup(){
   $("mExam").setAttribute("aria-pressed", mode==="exam");
   $("lenWrap").hidden = mode !== "exam";
 
+  renderDiffs();
   $("cats").innerHTML = CAT_ORDER.filter(c => Q.some(q=>q.c===c)).map(c => {
     const n = Q.filter(q=>q.c===c).length;
     return '<button type="button" class="chip" data-cat="'+c+'" aria-pressed="'+catsOn.has(c)+'">'+CAT[c]+' <b>'+n+'</b></button>';
@@ -292,12 +303,19 @@ function renderSetup(){
   updateStart();
 }
 
+function renderDiffs(){
+  const base = Q.filter(q => catsOn.has(q.c) && topicsOn.has(q.t));
+  $("diffs").innerHTML = DIFF_ORDER.map(d =>
+    '<button type="button" class="chip" data-diff="'+d+'" aria-pressed="'+diffOn.has(d)+'">'+DIFF[d]+' <b>'+base.filter(q=>q.d===d).length+'</b></button>'
+  ).join("");
+}
 function pool(){
   const p = document.querySelector('input[name="pool"]:checked').value;
-  return Q.filter(q => catsOn.has(q.c) && topicsOn.has(q.t) &&
+  return Q.filter(q => catsOn.has(q.c) && topicsOn.has(q.t) && diffOn.has(q.d) &&
     (p==="all" || (p==="unseen" && !hist[q.id]) || (p==="wrong" && hist[q.id] && !hist[q.id][2])));
 }
 function updateStart(){
+  renderDiffs();
   const n = pool().length;
   let take = n;
   if(mode==="exam"){ const L = +$("examLen").value; if(L) take = Math.min(L, n); }
@@ -307,6 +325,12 @@ function updateStart(){
 
 $("mPractice").onclick = () => { mode="practice"; renderSetup(); };
 $("mExam").onclick = () => { mode="exam"; renderSetup(); };
+$("diffs").onclick = e => {
+  const b = e.target.closest("[data-diff]"); if(!b) return;
+  const d = b.dataset.diff;
+  if(diffOn.has(d)){ if(diffOn.size > 1) diffOn.delete(d); } else diffOn.add(d);
+  renderDiffs(); updateStart();
+};
 $("cats").onclick = e => {
   const b = e.target.closest("[data-cat]"); if(!b) return;
   const c = b.dataset.cat;
@@ -400,6 +424,17 @@ $("answers").onclick = e => { const b = e.target.closest("[data-k]"); if(b) choo
 $("nextBtn").onclick = next;
 $("prevBtn").onclick = () => { if(run.i>0){ run.i--; renderQ(); } };
 $("quitBtn").onclick = () => finish(true);
+$("homeBtn").onclick = () => {
+  const b = $("homeBtn");
+  const unsaved = run && run.mode==="exam" && run.answers.some(a=>a!==null);
+  if(unsaved && !b.dataset.armed){
+    b.dataset.armed = "1"; b.textContent = "ללחוץ שוב · המבחן לא יישמר";
+    setTimeout(()=>{ delete b.dataset.armed; b.textContent = "→ דף ראשי"; }, 4000);
+    return;
+  }
+  delete b.dataset.armed; b.textContent = "→ דף ראשי";
+  run = null; show("setup"); renderSetup();
+};
 document.addEventListener("keydown", e => {
   if($("quiz").hidden || e.target.tagName==="SELECT") return;
   if(["1","2","3","4"].includes(e.key)){ choose(+e.key-1); e.preventDefault(); }
