@@ -265,7 +265,7 @@ function record(q, ok){
 
 function srcLabel(q){
   if(q.c === "protocols") return "פרוטוקול איחוד הצלה 2023 · עמ' " + q.p;
-  return q.f.replace(/\.pdf$/i,"").replace(/_+/g," ").trim() + " · עמ' " + q.p;
+  return q.f.replace(/\.pdf$/i,"").replace(/^\d+\s*-\s*/,"").replace(/_+/g," ").trim() + " · עמ' " + q.p;
 }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
