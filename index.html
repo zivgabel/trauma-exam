@@ -151,6 +151,7 @@
   }
   @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
+<script data-goatcounter="https://zivgabel.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -252,6 +253,9 @@ let catsOn = new Set(CAT_ORDER), topicsOn = new Set();
 const DIFF_ORDER = ["easy","medium","hard"];
 let diffOn = new Set(DIFF_ORDER);
 let run = null; // {items:[q], answers:[idx|null], i, mode, revealed:Set}
+
+// ---- analytics (GoatCounter events; no-op if not loaded) ----
+function track(name){ try{ if(window.goatcounter && window.goatcounter.count) window.goatcounter.count({path:name, title:name, event:true}); }catch(e){} }
 
 // ---- history (per-viewer, best effort) ----
 let hist = {};
@@ -367,6 +371,7 @@ function show(id){ ["setup","quiz","results"].forEach(s => $(s).hidden = s!==id)
 // ---- quiz ----
 function start(items, m){
   run = { items, answers: items.map(()=>null), i:0, mode:m, revealed:new Set() };
+  track(m==="exam" ? "start-exam" : "start-practice");
   show("quiz"); renderQ();
 }
 function renderQ(){
@@ -456,6 +461,7 @@ function finish(early){
     items = idx.map(k=>run.items[k]); answers = idx.map(k=>run.answers[k]);
   }
   const total = items.length, right = items.filter((q,k)=>answers[k]===q.a).length;
+  track(run.mode==="exam" ? "finish-exam" : "finish-practice");
   const pct = total ? Math.round(100*right/total) : 0;
   const color = pct>=85 ? "var(--good)" : pct>=70 ? "var(--warn)" : "var(--bad)";
   const topics = {};
